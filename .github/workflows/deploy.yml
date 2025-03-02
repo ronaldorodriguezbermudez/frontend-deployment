@@ -61,4 +61,4 @@ jobs:
         
       - name: Remove tmp folder
         run: |
-          ssh -o StrictHostKeyChecking-no -i ec2_key.pem ec2-user@${{ env.EC2_PUBLIC_IP }} 'sudo rm -rf /home/ec2-user/temp_build/'
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ec2-user@${{ env.EC2_PUBLIC_IP }} 'sudo rm -rf /home/ec2-user/temp_build/'
