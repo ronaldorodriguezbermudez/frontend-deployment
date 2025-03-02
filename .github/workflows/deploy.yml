@@ -1,36 +1,73 @@
-name: Deploy Frontend to EC2
+name: CI Pipeline for Frontend App
 
 on:
+  pull_request:
+    branches:
+      - develop  # Se ejecuta CI cuando hay un PR hacia la rama develop
   push:
     branches:
-      - main
+      - main  # Se realiza el deploy cuando se hace merge en la rama main
 
 env:
-  EC2_PUBLIC_IP: ${{ secrets.EC2_PUBLIC_IP }}
+  EC2_PUBLIC_IP: ${{ vars.EC2_PUBLIC_IP }}
   EC2_PEM_FILE: ${{ secrets.EC2_PEM_FILE }}
 
 jobs:
-  deploy:
+  build:
+    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20.x'
+      - run: npm install
+      - run: npm run build --if-present
+      - run: npm test
 
-      - name: Set up SSH
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Add SSH Key
         run: |
           echo "${{ secrets.EC2_PEM_FILE }}" > ec2_key.pem
           chmod 600 ec2_key.pem
 
-      - name: Install Nginx
+      - name: Create temp directory
         run: |
-          ssh -i ec2_key.pem -o StrictHostKeyChecking=no ec2-user@${{ env.EC2_PUBLIC_IP }} "sudo yum update -y && sudo amazon-linux-extras install nginx1 -y"
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ec2-user@${{ env.EC2_PUBLIC_IP }} 'sudo mkdir /home/ec2-user/temp_build/ && sudo chmod 777 /home/ec2-user/temp_build/'
 
-      - name: Deploy files
-        run: |
-          scp -i ec2_key.pem -o StrictHostKeyChecking=no -r ./src ec2-user@${{ env.EC2_PUBLIC_IP }}:/var/www/html
-          scp -i ec2_key.pem -o StrictHostKeyChecking=no nginx.conf ec2-user@${{ env.EC2_PUBLIC_IP }}:/etc/nginx/nginx.conf
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20.x'
+      - run: npm install
+      - run: npm run build
+      - run: cd build && ls
 
-      - name: Start Nginx
+      - name: Change ownership of temp directory
         run: |
-          ssh -i ec2_key.pem -o StrictHostKeyChecking=no ec2-user@${{ env.EC2_PUBLIC_IP }} "sudo systemctl start nginx"
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ec2-user@${{ env.EC2_PUBLIC_IP }} 'sudo chown -R ec2-user:ec2-user /home/ec2-user/temp_build/'
+
+      - name: Copy Files to EC2 Temporary Directory
+        run: |
+          scp -o StrictHostKeyChecking=no -i ec2_key.pem -r ./src/* ec2-user@${{ env.EC2_PUBLIC_IP }}:/home/ec2-user/temp_build/
+
+      - name: Move Files to NGINX Directory
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ec2-user@${{ env.EC2_PUBLIC_IP }} 'sudo rm -rf /usr/share/nginx/html/*'
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ec2-user@${{ env.EC2_PUBLIC_IP }} 'sudo mv /home/ec2-user/temp_build/* /usr/share/nginx/html/'
+
+      - name: Restart NGINX
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ec2-user@${{ env.EC2_PUBLIC_IP }} 'sudo systemctl restart nginx'
+        
+      - name: Remove tmp folder
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ec2-user@${{ env.EC2_PUBLIC_IP }} 'sudo rm -rf /home/ec2-user/temp_build/'
