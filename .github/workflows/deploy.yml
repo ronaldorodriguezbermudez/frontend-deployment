@@ -24,7 +24,6 @@ jobs:
         with:
           node-version: '20.x'
       - run: npm install
-      - run: npm run build --if-present
       - run: npm test
 
   deploy:
@@ -42,13 +41,6 @@ jobs:
       - name: Create temp directory
         run: |
           ssh -o StrictHostKeyChecking=no -i ec2_key.pem ec2-user@${{ env.EC2_PUBLIC_IP }} 'sudo mkdir /home/ec2-user/temp_build/ && sudo chmod 777 /home/ec2-user/temp_build/'
-
-      - name: Use Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '20.x'
-      - run: npm install
-      - run: npm run build
 
       - name: Change ownership of temp directory
         run: |
@@ -69,4 +61,4 @@ jobs:
         
       - name: Remove tmp folder
         run: |
-          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ec2-user@${{ env.EC2_PUBLIC_IP }} 'sudo rm -rf /home/ec2-user/temp_build/'
+          ssh -o StrictHostKeyChecking-no -i ec2_key.pem ec2-user@${{ env.EC2_PUBLIC_IP }} 'sudo rm -rf /home/ec2-user/temp_build/'
