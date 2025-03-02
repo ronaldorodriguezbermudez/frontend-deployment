@@ -11,10 +11,13 @@ body {
     color: #333;
     line-height: 1.6;
     overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
 header {
-    background: #35424a;
+    background: linear-gradient(135deg, #4771f8, #812fe6);
     color: #ffffff;
     padding: 20px 0;
     text-align: center;
@@ -28,6 +31,7 @@ header h1 {
 }
 
 .container {
+    flex: 1;
     width: 80%;
     margin: auto;
     overflow: hidden;
@@ -58,11 +62,12 @@ footer {
     padding: 10px 20px;
     text-decoration: none;
     border-radius: 5px;
-    transition: background 0.3s ease;
+    transition: background 0.3s ease, transform 0.3s ease;
 }
 
 .button:hover {
     background: #333;
+    transform: scale(1.05);
 }
 
 #app {
