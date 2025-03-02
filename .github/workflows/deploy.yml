@@ -1,0 +1,36 @@
+name: Deploy Frontend to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  EC2_PUBLIC_IP: ${{ secrets.EC2_PUBLIC_IP }}
+  EC2_PEM_FILE: ${{ secrets.EC2_PEM_FILE }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up SSH
+        run: |
+          echo "${{ secrets.EC2_PEM_FILE }}" > ec2_key.pem
+          chmod 600 ec2_key.pem
+
+      - name: Install Nginx
+        run: |
+          ssh -i ec2_key.pem -o StrictHostKeyChecking=no ec2-user@${{ env.EC2_PUBLIC_IP }} "sudo yum update -y && sudo amazon-linux-extras install nginx1 -y"
+
+      - name: Deploy files
+        run: |
+          scp -i ec2_key.pem -o StrictHostKeyChecking=no -r ./src ec2-user@${{ env.EC2_PUBLIC_IP }}:/var/www/html
+          scp -i ec2_key.pem -o StrictHostKeyChecking=no nginx.conf ec2-user@${{ env.EC2_PUBLIC_IP }}:/etc/nginx/nginx.conf
+
+      - name: Start Nginx
+        run: |
+          ssh -i ec2_key.pem -o StrictHostKeyChecking=no ec2-user@${{ env.EC2_PUBLIC_IP }} "sudo systemctl start nginx"

@@ -1,0 +1,17 @@
+{
+  "name": "frontend-deployment",
+  "version": "1.0.0",
+  "description": "A simple frontend application deployed on Nginx in an EC2 instance.",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "http-server src -o",
+    "build": "echo 'No build step required for static files.'"
+  },
+  "dependencies": {
+    "http-server": "^0.12.3"
+  },
+  "devDependencies": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
