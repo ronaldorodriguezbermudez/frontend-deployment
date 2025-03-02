@@ -5,12 +5,15 @@
   "main": "src/app.js",
   "scripts": {
     "start": "http-server src -o",
-    "build": "echo 'No build step required for static files.'"
+    "build": "echo 'No build step required for static files.'",
+    "test": "jest"
   },
   "dependencies": {
     "http-server": "^0.12.3"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "jest": "^27.0.0"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC"
